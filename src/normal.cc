@@ -456,6 +456,7 @@ void command(Context& context, EnvVarMap env_vars)
     context.input_handler().prompt(
         ":", {}, context.main_sel_register_value(':').str(),
         context.faces()["Prompt"], PromptFlags::DropHistoryEntriesWithBlankPrefix,
+        ':',
         [](const Context& context, CompletionFlags flags,
            StringView cmd_line, ByteCount pos) {
                return CommandManager::instance().complete(context, flags, cmd_line, pos);
@@ -544,7 +545,7 @@ void pipe(Context& context, NormalParams)
     const char* prompt = replace ? "pipe:" : "pipe-to:";
     context.input_handler().prompt(
         prompt, {}, context.main_sel_register_value("|").str(), context.faces()["Prompt"],
-        PromptFlags::DropHistoryEntriesWithBlankPrefix,
+        PromptFlags::DropHistoryEntriesWithBlankPrefix, '|',
         shell_complete,
         [](StringView cmdline, PromptEvent event, Context& context)
         {
@@ -625,7 +626,7 @@ void insert_output(Context& context, NormalParams)
     const char* prompt = mode == InsertMode::Insert ? "insert-output:" : "append-output:";
     context.input_handler().prompt(
         prompt, {}, context.main_sel_register_value("|").str(), context.faces()["Prompt"],
-        PromptFlags::DropHistoryEntriesWithBlankPrefix,
+        PromptFlags::DropHistoryEntriesWithBlankPrefix, '|',
         shell_complete,
         [](StringView cmdline, PromptEvent event, Context& context)
         {
@@ -760,7 +761,7 @@ void regex_prompt(Context& context, String prompt, String default_regex, T func)
     SelectionList selections = context.selections();
     context.input_handler().prompt(
         std::move(prompt), {}, default_regex, context.faces()["Prompt"],
-        PromptFlags::Search,
+        PromptFlags::Search, '/',
         [](const Context& context, CompletionFlags, StringView regex, ByteCount pos) -> Completions {
             auto current_word = [](StringView s) {
                 auto it = s.end();
@@ -1144,7 +1145,7 @@ void keep_pipe(Context& context, NormalParams)
 {
     context.input_handler().prompt(
         "keep pipe:", {}, {}, context.faces()["Prompt"],
-        PromptFlags::DropHistoryEntriesWithBlankPrefix, shell_complete,
+        PromptFlags::DropHistoryEntriesWithBlankPrefix, '|', shell_complete,
         [](StringView cmdline, PromptEvent event, Context& context) {
             if (event != PromptEvent::Validate)
                 return;
@@ -1301,7 +1302,7 @@ void select_object(Context& context, NormalParams params)
 
             context.input_handler().prompt(
                 "object desc:", {}, {}, context.faces()["Prompt"],
-                PromptFlags::None, complete_nothing,
+                PromptFlags::None, '_', complete_nothing,
                 [count,info](StringView cmdline, PromptEvent event, Context& context) {
                     if (event != PromptEvent::Change)
                         hide_auto_info_ifn(context, info);

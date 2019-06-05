@@ -20,6 +20,7 @@ public:
 
     virtual void set(Context& context, ConstArrayView<String> values) = 0;
     virtual ConstArrayView<String> get(const Context& context) = 0;
+    virtual const String& get_main(const Context& context, size_t main_index) = 0;
 };
 
 // static value register, which can be modified
@@ -38,6 +39,13 @@ public:
             return ConstArrayView<String>(String::ms_empty);
         else
             return ConstArrayView<String>(m_content);
+    }
+
+    const String& get_main(const Context&, size_t main_index) override
+    {
+        if (m_content.empty())
+            return String::ms_empty;
+        return m_content[std::min(main_index, m_content.size() - 1)];
     }
 protected:
     Vector<String, MemoryDomain::Registers> m_content;
@@ -68,6 +76,29 @@ private:
     Setter m_setter;
 };
 
+// Register that is used to store some kind prompt history
+class HistoryRegister : public StaticRegister
+{
+public:
+    void set(Context&, ConstArrayView<String> values) override
+    {
+        for (auto& entry : values)
+        {
+            m_content.erase(std::remove(m_content.begin(), m_content.end(), entry),
+                          m_content.end());
+            m_content.push_back(entry);
+        }
+    }
+
+    const String& get_main(const Context&, size_t) const
+    {
+        return m_content.empty() ? String::ms_empty : m_content.back();
+    }
+
+    const String& operator[](size_t i) const { return m_content[i]; }
+    size_t size() const { return m_content.size(); }
+};
+
 template<typename Func>
 std::unique_ptr<Register> make_dyn_reg(Func func)
 {
@@ -92,6 +123,11 @@ public:
     ConstArrayView<String> get(const Context&) override
     {
         return ConstArrayView<String>(String::ms_empty);
+    }
+
+    const String& get_main(const Context&, size_t) override
+    {
+        return String::ms_empty;
     }
 };
 
